@@ -18,7 +18,7 @@
 
 #define DDR_NRF DDRB
 #define PORT_NRF PORTB
-#define CE 4
+#define CE 0
 
 #endif
 

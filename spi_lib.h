@@ -5,7 +5,7 @@
 
 #define DDR_SPI DDRB
 #define PORT_SPI PORTB
-#define SS 0
+#define SS 4
 #define MOSI 2
 #define MISO 3
 #define SCK 1
