@@ -41,6 +41,6 @@ uchar getReg(uchar reg);
 
 // Private functions, do not use them
 void portInit(void);
-uchar* sendToNrf(uchar readWrite, uchar reg, uchar *array, uchar arraySize);
+void sendToNrf(uchar readWrite, uchar reg, uchar *array, uchar arraySize, uchar *ret);
 
 #endif

@@ -19,7 +19,7 @@ typedef signed char schar;
 #define SR_CLR 4
 
 #define ADDR_SIZE 5
-#define POINT_NUMBER 40
+#define POINT_NUMBER 2
 
 typedef struct
 {
@@ -31,7 +31,7 @@ typedef struct
 static const uchar payloadSize = POINT_NUMBER * sizeof(Point);
 static uchar address[ADDR_SIZE] = {0x11, 0x12, 0x12, 0x12, 0x12};
 
-Point *points;
+Point points[POINT_NUMBER];
 
 volatile uchar pos;
 volatile bool flag = false;
@@ -39,7 +39,7 @@ volatile uchar j;
 
 ISR(INT7_vect)
 {
-    points = (Point*)sendToNrf(R, R_RX_PAYLOAD, NULL, payloadSize);
+    sendToNrf(R, R_RX_PAYLOAD, NULL, payloadSize, (uchar*)points);
     resetIRQ();
 }
 

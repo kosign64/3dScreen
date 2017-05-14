@@ -1,4 +1,5 @@
 #include <util/delay.h>
+#include <stddef.h>
 #include "radio_lib.h"
 
 #include <avr/io.h>
@@ -11,9 +12,8 @@ void portInit(void)
     CE_LOW();
 }
 
-uchar* sendToNrf(uchar readWrite, uchar reg, uchar *array, uchar arraySize)
+void sendToNrf(uchar readWrite, uchar reg, uchar *array, uchar arraySize, uchar *ret)
 {
-    static uchar ret[100];
     uchar i;
     if(readWrite == W)
     {
@@ -40,8 +40,6 @@ uchar* sendToNrf(uchar readWrite, uchar reg, uchar *array, uchar arraySize)
         _delay_us(30);
     }
     CSN_HIGH();
-    
-    return ret;
 }
 
 void initAsTrans(uchar *address, uchar addressSize, uchar payloadSize)
@@ -55,14 +53,14 @@ void initAsTrans(uchar *address, uchar addressSize, uchar payloadSize)
     // Transmitter gets automatic response from receiver when successful transmission
     // Only if Transmitter has identical RF_Adress on it's channel ex: RX_ADDR_P0 = TX_ADDR
     val = 0x00;
-    sendToNrf(W, EN_AA, &val, 1); 
+    sendToNrf(W, EN_AA, &val, 1, NULL);
     
     //val = 0x2F;
     //sendToNrf(W, SETUP_RETR, &val, 1);                                                          
     
     // Choose number of enabled data pipes (1-5)
     val = 0x01;
-    sendToNrf(W, EN_RXADDR, &val, 1); // enable data pipe 0
+    sendToNrf(W, EN_RXADDR, &val, 1, NULL); // enable data pipe 0
     
     // RF_Adress width setup
     switch(addressSize)
@@ -78,39 +76,39 @@ void initAsTrans(uchar *address, uchar addressSize, uchar payloadSize)
             val = 2;
             break;
         }
-        
+
         case 5:
         {
             val = 3;
             break;
         }
     }
-    sendToNrf(W, SETUP_AW, &val, 1);
+    sendToNrf(W, SETUP_AW, &val, 1, NULL);
     
     // RF channel setup - choose frequency 2,400 - 2,527GHz 1MHz/step
     val = 0x20; // 2,401GHz
-    sendToNrf(W, RF_CH, &val, 1);
+    sendToNrf(W, RF_CH, &val, 1, NULL);
     
     // RF setup - choose power mode and data speed.
     val = 0x07; // 0b00000111 bit 3='0' 1Mbps = longer range, bit 2-1 power mode ("11" = - 0dB; "00" = -18dB)
-    sendToNrf(W, RF_SETUP, &val, 1);
+    sendToNrf(W, RF_SETUP, &val, 1, NULL);
                                    
     // RX RF_Adress setup 5 bytes - Set Receiver address (set RX_ADDR_P0 = TX_ADDR if EN_AA is enabled!!!)
-    sendToNrf(W, RX_ADDR_P0, address, addressSize); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR
+    sendToNrf(W, RX_ADDR_P0, address, addressSize, NULL); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR
     
     //TX RF_Adress setup 5 bytes - Set transmitter address (not used in a receiver but can be set anyway)
-    sendToNrf(W, TX_ADDR, address, addressSize); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR   
+    sendToNrf(W, TX_ADDR, address, addressSize, NULL); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR
     
     // Payload Width Setup 1-32byte (how many bytes to send per transmission)
     val = payloadSize; // Send 5 bytes per package (same on receiver and transmitter)
-    sendToNrf(W, RX_PW_P0, &val, 1);
+    sendToNrf(W, RX_PW_P0, &val, 1, NULL);
     
     // CONFIG reg setup - Now it's time to boot up the nrf and choose if it's suppose to be a transmitter or receiver
     //val[0] = 0x1E; // 0b0001 1110 - bit 0 = '0'/'1' - transmitter/receiver
                    // bit 1 = '1' - power up
                    // bit 4 = '1' - mask_Max_RT i.e. IRQ-interrupt is not triggered if transmission failed    
     val = (1 << PWR_UP) | (1 << EN_CRC) | (1 << MASK_MAX_RT); // Add interrupt for receiver
-    sendToNrf(W, CONFIG, &val, 1);
+    sendToNrf(W, CONFIG, &val, 1, NULL);
     
     // device need 1.5 ms to reach standby mode (CE=low)
     _delay_ms(1);
@@ -127,14 +125,14 @@ void initAsReceiver(uchar *address, uchar addressSize, uchar payloadSize)
     // Transmitter gets automatic response from receiver when successful transmission
     // Only if Transmitter has identical RF_Adress on it's channel ex: RX_ADDR_P0 = TX_ADDR
     val = 0x00;
-    sendToNrf(W, EN_AA, &val, 1); 
+    sendToNrf(W, EN_AA, &val, 1, NULL);
     
     //val = 0x2F;
     //sendToNrf(W, SETUP_RETR, &val, 1);                                                          
     
     // Choose number of enabled data pipes (1-5)
     val = 0x01;
-    sendToNrf(W, EN_RXADDR, &val, 1); // enable data pipe 0
+    sendToNrf(W, EN_RXADDR, &val, 1, NULL); // enable data pipe 0
     
     // RF_Adress width setup
     switch(addressSize)
@@ -157,25 +155,25 @@ void initAsReceiver(uchar *address, uchar addressSize, uchar payloadSize)
             break;
         }
     }
-    sendToNrf(W, SETUP_AW, &val, 1);
+    sendToNrf(W, SETUP_AW, &val, 1, NULL);
     
     // RF channel setup - choose frequency 2,400 - 2,527GHz 1MHz/step
     val = 0x20; // 2,401GHz
-    sendToNrf(W, RF_CH, &val, 1);
+    sendToNrf(W, RF_CH, &val, 1, NULL);
     
     // RF setup - choose power mode and data speed.
     val = 0x07; // 0b00000111 bit 3='0' 1Mbps = longer range, bit 2-1 power mode ("11" = - 0dB; "00" = -18dB)
-    sendToNrf(W, RF_SETUP, &val, 1);
+    sendToNrf(W, RF_SETUP, &val, 1, NULL);
                                    
     // RX RF_Adress setup 5 bytes - Set Receiver address (set RX_ADDR_P0 = TX_ADDR if EN_AA is enabled!!!)
-    sendToNrf(W, RX_ADDR_P0, address, addressSize); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR
+    sendToNrf(W, RX_ADDR_P0, address, addressSize, NULL); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR
     
     //TX RF_Adress setup 5 bytes - Set transmitter address (not used in a receiver but can be set anyway)
-    sendToNrf(W, TX_ADDR, address, addressSize); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR   
+    sendToNrf(W, TX_ADDR, address, addressSize, NULL); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR
     
     // Payload Width Setup 1-32byte (how many bytes to send per transmission)
     val = payloadSize; // Send 5 bytes per package (same on receiver and transmitter)
-    sendToNrf(W, RX_PW_P0, &val, 1);
+    sendToNrf(W, RX_PW_P0, &val, 1, NULL);
     
     // CONFIG reg setup - Now it's time to boot up the nrf and choose if it's suppose to be a transmitter or receiver
     //val[0] = 0x1E; // 0b0001 1110 - bit 0 = '0'/'1' - transmitter/receiver
@@ -183,7 +181,7 @@ void initAsReceiver(uchar *address, uchar addressSize, uchar payloadSize)
                    // bit 4 = '1' - mask_Max_RT i.e. IRQ-interrupt is not triggered if transmission failed    
     val = (1 << PWR_UP) | (1 << EN_CRC) | (1 << MASK_MAX_RT) |
     (1 << PRIM_RX); // Add interrupt for receiver
-    sendToNrf(W, CONFIG, &val, 1);
+    sendToNrf(W, CONFIG, &val, 1, NULL);
     
     // device need 1.5 ms to reach standby mode (CE=low)
     _delay_ms(1);
@@ -191,8 +189,8 @@ void initAsReceiver(uchar *address, uchar addressSize, uchar payloadSize)
 
 void transmitPayload(uchar *buff, uchar payloadSize)
 {
-    sendToNrf(R, FLUSH_TX, buff, 0); // Sends 0xE1 to flush the regestry from old data
-    sendToNrf(R, W_TX_PAYLOAD, buff, payloadSize);  
+    sendToNrf(R, FLUSH_TX, buff, 0, NULL); // Sends 0xE1 to flush the regestry from old data
+    sendToNrf(R, W_TX_PAYLOAD, buff, payloadSize, NULL);
     
     _delay_ms(10);
     CE_HIGH();
@@ -225,20 +223,20 @@ void setNewAdressAndSize(uchar *address, uchar addressSize)
             break;
         }
     }
-    sendToNrf(W, SETUP_AW, &val, 1);
-    sendToNrf(W, RX_ADDR_P0, address, addressSize); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR
-    sendToNrf(W, TX_ADDR, address, addressSize); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR    
+    sendToNrf(W, SETUP_AW, &val, 1, NULL);
+    sendToNrf(W, RX_ADDR_P0, address, addressSize, NULL); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR
+    sendToNrf(W, TX_ADDR, address, addressSize, NULL); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR
 }
 
 void setNewAddress(uchar *address, uchar addressSize)
 {
     uchar val = 0x00;
-    sendToNrf(W, CONFIG, &val, 1);
+    sendToNrf(W, CONFIG, &val, 1, NULL);
     _delay_ms(7);
-    sendToNrf(W, RX_ADDR_P0, address, addressSize); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR
-    sendToNrf(W, TX_ADDR, address, addressSize); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR   
+    sendToNrf(W, RX_ADDR_P0, address, addressSize, NULL); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR
+    sendToNrf(W, TX_ADDR, address, addressSize, NULL); // RX_ADDR_P0 because we chose pipe 0 on EN_RXADDR
     val = (1 << PWR_UP) | (1 << EN_CRC) | (1 << MASK_MAX_RT);
-    sendToNrf(W, CONFIG, &val, 1); 
+    sendToNrf(W, CONFIG, &val, 1, NULL);
     _delay_ms(7);
 }
 
