@@ -19,7 +19,7 @@ typedef signed char schar;
 #define SR_CLR 4
 
 #define ADDR_SIZE 5
-#define POINT_NUMBER 2
+#define POINT_NUMBER 7
 
 typedef struct
 {
@@ -31,7 +31,7 @@ typedef struct
 static const uchar payloadSize = POINT_NUMBER * sizeof(Point);
 static uchar address[ADDR_SIZE] = {0x11, 0x12, 0x12, 0x12, 0x12};
 
-Point points[POINT_NUMBER];
+volatile uchar points[POINT_NUMBER * 2] = {0};
 
 volatile uchar pos;
 volatile bool flag = false;
@@ -39,7 +39,10 @@ volatile uchar j;
 
 ISR(INT7_vect)
 {
-    sendToNrf(R, R_RX_PAYLOAD, NULL, payloadSize, (uchar*)points);
+    sendToNrf(R, R_RX_PAYLOAD, NULL, payloadSize, points);
+//    points[0].angle = 30;
+
+//    points[0].y = 5;
     resetIRQ();
 }
 
@@ -97,6 +100,7 @@ int main(void)
     DDRF = 0xFF;
     DDRE = _BV(SR_DATA) | _BV(SR_CLK) | _BV(SR_CLR);
     PORTE |= _BV(SR_CLR);
+    _delay_ms(2000);
     initAsReceiver(address, ADDR_SIZE, payloadSize);
     startListengForPayload();
 
@@ -116,26 +120,36 @@ int main(void)
             for(uchar k = 0; k < POINT_NUMBER; ++k)
             {
                 uchar oppositePos = (pos + 64) & 0x7F;
-                if(points[k].angle == pos)
+                uchar angle;
+                schar x;
+                uchar y;
+                angle = points[k * 2] >> 1;
+                x = points[k * 2 + 1] >> 4;
+                if(bit_is_set(points[k * 2], 0))
                 {
-                    if(points[k].x == i)
+                    x |= _BV(7) | _BV(6) | _BV(5) | _BV(4);
+                }
+                y = points[k * 2 + 1] & 0x0F;
+                if(angle == pos)
+                {
+                    if(x == i)
                     {
-                        setPorts(points[k].y, 0);
+                        setPorts(y, 0);
                     }
-                    else if(-(points[k].x + 1) == i)
+                    else if(-(x + 1) == i)
                     {
-                        setPorts(points[k].y, 1);
+                        setPorts(y, 1);
                     }
                 }
-                else if(points[k].angle == oppositePos)
+                else if(angle == oppositePos)
                 {
-                    if(points[k].x == i)
+                    if(x == i)
                     {
-                        setPorts(points[k].y, 1);
+                        setPorts(y, 1);
                     }
-                    else if(-(points[k].x + 1) == i)
+                    else if(-(x + 1) == i)
                     {
-                        setPorts(points[k].y, 0);
+                        setPorts(y, 0);
                     }
                 }
             }
