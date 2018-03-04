@@ -21,13 +21,6 @@ typedef signed char schar;
 #define ADDR_SIZE 5
 #define POINT_NUMBER 7
 
-typedef struct
-{
-    unsigned angle : 7;
-    signed   x     : 5;
-    unsigned y     : 4;
-}Point;
-
 static const uchar payloadSize = POINT_NUMBER * sizeof(Point);
 static uchar address[ADDR_SIZE] = {0x11, 0x12, 0x12, 0x12, 0x12};
 
@@ -40,9 +33,6 @@ volatile uchar j;
 ISR(INT7_vect)
 {
     sendToNrf(R, R_RX_PAYLOAD, NULL, payloadSize, points);
-//    points[0].angle = 30;
-
-//    points[0].y = 5;
     resetIRQ();
 }
 
