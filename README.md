@@ -1,5 +1,5 @@
 # 3d POV (Persistence of Vision) display
-The programm shows several 3d animations on 3d POV display
+The program shows several 3d animations on 3d POV display
 
 ## Tech
 3d display has 398 blue LEDs and uses DC motor for rotation\
